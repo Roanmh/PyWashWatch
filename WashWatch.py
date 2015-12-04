@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-from datetime import datetime
+from datetime import datetime, timedelta
 import RPi.GPIO as GPIO
 import csv
 
@@ -47,8 +47,8 @@ class WashWatch:
         self.dryer_setpt = dryer_setpt_def  # On setpt in Volts
 
         # Current Values
-        self.washer_value = None
-        self.dryer_value = None
+        self.washer_raw = None
+        self.dryer_raw = None
         self.washer_volts = None
         self.dryer_volts = None
         self.washer_on = None
@@ -57,7 +57,7 @@ class WashWatch:
         self.dryer_in_cycle = None
 
         # Basic in_cycle variables
-        self.last_on_timestamp_w = None  # Last recorded on time of the washer
+        self.last_on_timestamp_w = datetime.timedelta(minutes=3)  # Last recorded on time of the washer
 
     def read_appliance(self, app):
         """
@@ -66,12 +66,12 @@ class WashWatch:
         :return: value out of 1024 scaled to Vref of ADC chip
         """
         if app == 'w':
-            self.washer_value = \
+            self.washer_raw = \
                 self.read_adc(self.washer_port, self.spiclk, self.spimosi, self.spimiso, self.spics)
-            return self.washer_value
+            return self.washer_raw
         elif app == 'd':
-            self.dryer_value = self.read_adc(self.dryer_port, self.spiclk, self.spimosi, self.spimiso, self.spic)
-            return self.dryer_value
+            self.dryer_raw = self.read_adc(self.dryer_port, self.spiclk, self.spimosi, self.spimiso, self.spics)
+            return self.dryer_raw
         else:
             return -1  # Light error checking
 
@@ -92,7 +92,7 @@ class WashWatch:
         elif is_number(setpt) and is_number(val):  # Unsure of this logic
             return val > setpt
         elif setpt is None:
-            return is_on('w'), is_on('d')
+            return self.is_on('w'), self.is_on('d')
         else:
             return -1
 
@@ -124,7 +124,7 @@ class WashWatch:
             self.read_appliance('w')
 
             print("\t\tCalculating/Analyzing Data.")
-            self.washer_volts = self.to_volts(self.washer_value)
+            self.washer_volts = self.to_volts(self.washer_raw)
             self.is_on('w')
             self.in_cycle_washer()
         if appliance is None or appliance == 'd':
@@ -132,7 +132,7 @@ class WashWatch:
             self.read_appliance('d')
 
             print("\t\tCalculating/Analyzing Data.")
-            self.washer_volts = to_volts(self.washer_value)
+            self.dryer_volts = to_volts(self.dryer_raw)
             self.is_on('d')
 
     # read SPI data from MCP3008 chip, 8 possible adc's (0 thru 7)
@@ -239,9 +239,9 @@ def main():
         ww.update_values()
 
         print("Logging to csv.")
-        log.writerow([str(datetime.now().date()), str(datetime.now().time()), ww.washer_value,
-                       ww.washer_volts, ww.washer_on, ww.washer_in_cycle, ww.dryer_value, ww.dryer_volts, ww.dryer_on,
-                       ww.dryer_in_cycle])
+        log.writerow([str(datetime.now().date()), str(datetime.now().time()), ww.washer_raw,
+                      ww.washer_volts, ww.washer_on, ww.washer_in_cycle, ww.dryer_raw, ww.dryer_volts, ww.dryer_on,
+                      ww.dryer_in_cycle])
 
         # Loop breaking logic
         if ww.dryer_in_cycle or ww.washer_in_cycle:
