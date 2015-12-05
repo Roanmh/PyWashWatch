@@ -3,6 +3,7 @@
 from datetime import datetime, timedelta
 import RPi.GPIO as GPIO
 import csv
+import time
 
 DEBUG = 1
 
@@ -106,10 +107,10 @@ class WashWatch:
             self.washer_in_cycle = True  # Set variable accordingly
             return True
         # Though washer is off, wait for time period to expire before declaring it off
-        elif not self.washer_on and datetime.now() - self.last_on_timestamp_w < datetime.timedelta(minutes=2):
+        elif not self.washer_on and datetime.now() - self.last_on_timestamp_w < timedelta(minutes=2):
             return True
         # Washer is off and time period has expired. Declare the cycle off
-        elif not self.washer_on and datetime.now() - self.last_on_timestamp_w >= datetime.timedelta(minutes=2):
+        elif not self.washer_on and datetime.now() - self.last_on_timestamp_w >= timedelta(minutes=2):
             self.washer_in_cycle = False
             return False
 
@@ -132,7 +133,7 @@ class WashWatch:
             self.read_appliance('d')
 
             print("\t\tCalculating/Analyzing Data.")
-            self.dryer_volts = to_volts(self.dryer_raw)
+            self.dryer_volts = self.to_volts(self.dryer_raw)
             self.is_on('d')
 
     # read SPI data from MCP3008 chip, 8 possible adc's (0 thru 7)
@@ -248,7 +249,7 @@ def main():
             started = True
         if not ww.dryer_in_cycle and not ww.washer_in_cycle and started:
             break
-        sleep(1)
+        time.sleep(1)
 
     f.close()
     GPIO.cleanup()
