@@ -58,7 +58,7 @@ class WashWatch:
         self.dryer_in_cycle = None
 
         # Basic in_cycle variables
-        self.last_on_timestamp_w = datetime.now() - datetime.timedelta(minutes=3)  # Last recorded on time of the washer
+        self.last_on_timestamp_w = datetime.now() - timedelta(minutes=3)  # Last recorded on time of the washer
 
     def read_appliance(self, app):
         """
