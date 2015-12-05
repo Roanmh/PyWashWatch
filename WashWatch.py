@@ -175,7 +175,10 @@ class WashWatch:
             GPIO.output(clockpin, False)
             adcout <<= 1
             if (GPIO.input(misopin)):
+                print 1
                 adcout |= 0x1
+            else:
+                print 0
 
         GPIO.output(cspin, True)
 
